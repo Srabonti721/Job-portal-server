@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-require('dotenv').config()
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -12,40 +12,52 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    },
 });
 client.connect().catch(console.dir);
 const jobsCollections = client.db("JobPortal").collection("Jobs");
-const applicationsCollection = client.db("JobPortal").collection("applications")
-// jobs api
-app.get("/jobs", async(req, res)=>{
-  const cursor = jobsCollections.find();
-  const result = await cursor.toArray();
-  res.send(result)
-})
+const applicationsCollection = client
+    .db("JobPortal")
+    .collection("applications");
 
-app.get('/jobs/:id', async(req, res)=>{
-  const id = req.params.id;
-  const query = {_id: new ObjectId(id)};
-  const result = await jobsCollections.findOne(query);
-  res.send(result)
-})
+// jobs api
+app.get("/jobs", async (req, res) => {
+    const cursor = jobsCollections.find();
+    const result = await cursor.toArray();
+    res.send(result);
+});
+
+app.get("/jobs/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await jobsCollections.findOne(query);
+    res.send(result);
+});
 
 // applications api
-app.post('/applications', async(req, res)=>{
-  const application = req.body;
-  const result = await applicationsCollection.insertOne(application);
-  res.send(result) 
-})
 
+app.get("/applications", async (req, res) => {
+    const email = req.query.email;
+    const query = {
+        applicant:email,
+    };
+    const result = await applicationsCollection.find(query).toArray();
+    res.send(result)
+});
 
-app.get("/", (req, res)=>{
-    res.send("job portal all jobs ")
-})
-app.listen(port,()=>{
-    console.log(`job portal app listening on port:${port}`);  
-})
+app.post("/applications", async (req, res) => {
+    const application = req.body;
+    const result = await applicationsCollection.insertOne(application);
+    res.send(result);
+});
+
+app.get("/", (req, res) => {
+    res.send("job portal all jobs ");
+});
+app.listen(port, () => {
+    console.log(`job portal app listening on port:${port}`);
+});
