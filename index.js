@@ -20,6 +20,7 @@ const client = new MongoClient(uri, {
 });
 client.connect().catch(console.dir);
 const jobsCollections = client.db("JobPortal").collection("Jobs");
+const applicationsCollection = client.db("JobPortal").collection("applications")
 // jobs api
 app.get("/jobs", async(req, res)=>{
   const cursor = jobsCollections.find();
@@ -32,6 +33,13 @@ app.get('/jobs/:id', async(req, res)=>{
   const query = {_id: new ObjectId(id)};
   const result = await jobsCollections.findOne(query);
   res.send(result)
+})
+
+// applications api
+app.post('/applications', async(req, res)=>{
+  const application = req.body;
+  const result = await applicationsCollection.insertOne(application);
+  res.send(result) 
 })
 
 
