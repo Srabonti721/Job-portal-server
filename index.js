@@ -38,6 +38,12 @@ app.get("/jobs/:id", async (req, res) => {
     res.send(result);
 });
 
+app.post("/jobs", async(req, res)=>{
+    const newJob = req.body;
+    const result = await jobsCollections.insertOne(newJob);
+    res.send(result)
+})
+
 // applications api
 
 app.get("/applications", async (req, res) => {
