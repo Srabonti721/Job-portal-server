@@ -26,7 +26,12 @@ const applicationsCollection = client
 
 // jobs api
 app.get("/jobs", async (req, res) => {
-    const cursor = jobsCollections.find();
+    const email = req.query.email;
+    const query ={};
+    if(email){
+        query.hr_email = email
+    }
+    const cursor = jobsCollections.find(query);
     const result = await cursor.toArray();
     res.send(result);
 });
@@ -64,11 +69,30 @@ app.get("/applications", async (req, res) => {
     res.send(result)
 });
 
+app.get("/applications/job/:job_id", async(req, res)=>{
+const job_id = req.params.job_id;
+const query = {jobID : job_id};
+const result = await applicationsCollection.find(query).toArray();
+res.send(result);
+})
+
 app.post("/applications", async (req, res) => {
     const application = req.body;
     const result = await applicationsCollection.insertOne(application);
     res.send(result);
 });
+
+app.patch('/applications/:id', async(req, res)=>{
+    const id = req.params.id;
+    const filter = {_id: new ObjectId(id)};
+    const updatedDoc = {
+        $set:{
+            status: req.body.status
+        }
+    }
+    const result = await applicationsCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+})
 
 app.get("/", (req, res) => {
     res.send("job portal all jobs ");
