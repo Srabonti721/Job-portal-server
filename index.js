@@ -3,6 +3,7 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
+const jwt = require("jsonwebtoken")
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -24,6 +25,14 @@ const applicationsCollection = client
     .db("JobPortal")
     .collection("applications");
 
+    // jwt related web token
+    app.post('/jwt', async(req, res)=>{
+        const {email}  = req.body;
+        const user = {email};
+        const token = jwt.sign(user, "secret", {expiresIn:"1h"});
+        res.send({token})
+    })
+
 // jobs api
 app.get("/jobs", async (req, res) => {
     const email = req.query.email;
@@ -43,11 +52,25 @@ app.get("/jobs/:id", async (req, res) => {
     res.send(result);
 });
 
+app.get('/jobs/applications', async(req, res)=>{
+const email = req.query.email;
+const query = {hr_email: email};
+const jobs = await jobsCollections.find(query).toArray();
+for(const job of jobs){
+    const applicationQuery = {jobId : job._id.toString()};
+    const applicationCount = await applicationsCollection.countDocuments(applicationQuery);
+    job.applicationCount = applicationCount
+}
+res.send(jobs)
+})
+
 app.post("/jobs", async(req, res)=>{
     const newJob = req.body;
     const result = await jobsCollections.insertOne(newJob);
     res.send(result)
 })
+
+
 
 // applications api
 
