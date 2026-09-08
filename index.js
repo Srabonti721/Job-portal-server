@@ -3,11 +3,39 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser")
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+    origin:['http://localhost:5173'],
+    credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser())
+
+const logger = (req, res, next) =>{
+    console.log("inside logger middleware ");
+    next()
+    
+}
+
+const verifyToken = (req, res, next) =>{
+    const token = req?.cookies?.token;
+    console.log("cookie in the middleware",token);
+    if(!token){
+        return res.send.status(401).send({message: "unauthrized access"});
+    }
+    // verify token
+    jwt.verify(token, process.env.jwt_ACCESS_SECRET, (err, decoded) =>{
+        if(err){
+           return res.send.status(401).send({message:"unauthrized access"})
+        }
+        req.decoded = decoded;
+        next(); 
+    })
+    
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.efzq5bn.mongodb.net/?appName=Cluster0`;
 
@@ -26,12 +54,18 @@ const applicationsCollection = client
     .collection("applications");
 
     // jwt related web token
-    app.post('/jwt', async(req, res)=>{
-        const {email}  = req.body;
-        const user = {email};
-        const token = jwt.sign(user, "secret", {expiresIn:"1h"});
-        res.send({token})
+    app.post("/jwt", async(req, res)=>{
+        const userData = req.body;
+        const token = jwt.sign(userData, process.env.jwt_ACCESS_SECRET, {expiresIn:"1d"});
+
+        // send token in the cookie
+        res.cookie("token", token,{
+                httpOnly:true,
+                secure:false
+        })
+        res.send({success:true})
     })
+
 
 // jobs api
 app.get("/jobs", async (req, res) => {
@@ -74,8 +108,13 @@ app.post("/jobs", async(req, res)=>{
 
 // applications api
 
-app.get("/applications", async (req, res) => {
+app.get("/applications",logger,verifyToken, async (req, res) => {
     const email = req.query.email;
+
+    // console.log("inside application api :", req.cookies);
+    if(email !== req.decoded.email ){
+return res.status(403).send({message :"forbidden access"})
+    }
     const query = {
         applicant:email,
     };
